@@ -3,3 +3,5 @@
 venv/
 settings.py
 *.pyc
+.venv/
+tmp.json

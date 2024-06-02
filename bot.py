@@ -93,6 +93,7 @@ def send_rating(user_id):
     message += f'<b>Пройдено тестов: </b>{rating_dct["tests_count"]}\n'
     message += f"{rate}"
     bot.send_message(user_id, message, parse_mode="html")
+    utils.write_data("data", "tmp.json", rate)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -109,8 +110,12 @@ def callback_start(call):
             kb.add(
                 telebot.types.InlineKeyboardButton(text=button, callback_data=button)
             )
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text="Выбери тему",
-                              reply_markup=kb)
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text="Выбери тему",
+            reply_markup=kb,
+        )
 
     elif call.data in theme_lst:
         for theme in theme_lst:
@@ -126,7 +131,12 @@ def callback_start(call):
                         text=tests, callback_data=callback_data
                     )
                 )
-            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=theme, reply_markup=kb)
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.id,
+                text=theme,
+                reply_markup=kb,
+            )
 
     elif call.data.count("|") in [2, 3, 4]:
         question_dct, resume_dct, is_full = get_question(*call.data.split("|"))
@@ -141,8 +151,10 @@ def callback_start(call):
                     continue
                 if ur["tests"] != resume_dct["tests"]:
                     continue
-                question = questions_lst.pop(questions_lst.index(ur["num"]))
-                score += ur["weight"]
+                if questions_lst:
+                    question = questions_lst.pop(questions_lst.index(ur["num"]))
+                    score += ur["weight"]
+
             resume_dct.update({"score": score})
 
             username = get_full_name(call.message.chat)
@@ -154,6 +166,8 @@ def callback_start(call):
             user_score_dct[user_str_id]["last_resume"] = str(datetime.datetime.now())
             utils.write_data("data", "user_score_dct.json", user_score_dct)
             send_rating(call.message.chat.id)
+
+            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
             return
 
         elif resume_dct:
@@ -178,7 +192,12 @@ def callback_start(call):
                     callback_data=callback_data,
                 )
             )
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=question, reply_markup=kb)
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text=question,
+            reply_markup=kb,
+        )
 
 
 @bot.message_handler(content_types=["text"])
