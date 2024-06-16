@@ -79,6 +79,23 @@ def get_full_name(user):
 
 
 def send_rating(user_id):
+    print('rating')
+    '''
+                "questions_count": 20,
+                "theme": "Первая мировая война",
+                "tests": "Тест 1",
+                "datetime": "2024-04-07 23:16:19.932513",
+                "score": 17
+            '''
+    rating_list = [
+        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
+        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
+        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score')
+    ]
+    sorted(rating_list, key=lambda x: x[6] / x[2])
+    for r in rating_list:
+        if r[3] != "Тест 1":
+            continue
     rating_dct = utils.read_data("data", "user_score_dct.json")
     rate = rating_dct.get(str(user_id), dict())
     rating_dct = {
