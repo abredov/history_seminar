@@ -1,4 +1,5 @@
 import datetime
+from sys import stdout
 import settings
 import telebot
 import random
@@ -8,7 +9,7 @@ bot = telebot.TeleBot(settings.token)
 
 
 def get_theme_name():
-    ww1_dct = utils.read_data("data", "world_war_one.json")
+    ww1_dct = utils.read_data("tests", "collection.json")
     button_lst = list()
     for key in ww1_dct.keys():
         button_lst.append(key)
@@ -16,7 +17,7 @@ def get_theme_name():
 
 
 def get_tests_name(theme):
-    ww1_dct = utils.read_data("data", "world_war_one.json")[theme]
+    ww1_dct = utils.read_data("tests", "collection.json")[theme]
     button_lst = list()
     for key in ww1_dct.keys():
         button_lst.append(key)
@@ -34,12 +35,15 @@ def get_question(*args):
 
     resume_dct = dict()
     is_full = False
-    question_dct = utils.read_data("data", "world_war_one.json")
+    question_dct = utils.read_data("tests", "collection.json")
     if len(args) == 3:
         question_dct = question_dct[theme][tests][num]
     elif len(args) == 5:
         question_dct = question_dct[theme][tests]
-        if num < (len(question_dct) - 1):
+        print("-" * 20)
+        print(num, len(question_dct))
+        if num < len(question_dct) - 1:
+            question_dct = question_dct[num]
             answer = int(args[3])
             weight = int(args[4])
             resume_dct = {
@@ -51,7 +55,6 @@ def get_question(*args):
                 "datetime": str(datetime.datetime.now()),
             }
             num = num + 1
-            question_dct = question_dct[num]
         else:
             # Вопросы кончились. Сделаем соответствующую запись в профиле пользователя
             questions_count = len(question_dct)
@@ -79,23 +82,6 @@ def get_full_name(user):
 
 
 def send_rating(user_id):
-    print('rating')
-    '''
-                "questions_count": 20,
-                "theme": "Первая мировая война",
-                "tests": "Тест 1",
-                "datetime": "2024-04-07 23:16:19.932513",
-                "score": 17
-            '''
-    rating_list = [
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score')
-    ]
-    sorted(rating_list, key=lambda x: x[6] / x[2])
-    for r in rating_list:
-        if r[3] != "Тест 1":
-            continue
     rating_dct = utils.read_data("data", "user_score_dct.json")
     rate = rating_dct.get(str(user_id), dict())
     rating_dct = {
@@ -143,6 +129,9 @@ def callback_start(call):
             kb = telebot.types.InlineKeyboardMarkup()
             for tests in quiz_button_lst:
                 callback_data = f"{theme}|{tests}|{num}"
+                if len(callback_data) > 33:
+                    stdout.write(f'{callback_data}\nThe length of the button command is very large.\n\n')
+                    exit()
                 kb.add(
                     telebot.types.InlineKeyboardButton(
                         text=tests, callback_data=callback_data
