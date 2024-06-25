@@ -39,29 +39,30 @@ def get_question(*args):
         question_dct = question_dct[theme][tests][num]
     elif len(args) == 5:
         question_dct = question_dct[theme][tests]
+        answer = int(args[3])
+        weight = int(args[4])
+        resume_dct = {
+            "theme": theme,
+            "tests": tests,
+            "num": num,
+            "answer": answer,
+            "weight": weight,
+            "datetime": str(datetime.datetime.now()),
+        }
         if num < (len(question_dct) - 1):
-            answer = int(args[3])
-            weight = int(args[4])
-            resume_dct = {
-                "theme": theme,
-                "tests": tests,
-                "num": num,
-                "answer": answer,
-                "weight": weight,
-                "datetime": str(datetime.datetime.now()),
-            }
             num = num + 1
             question_dct = question_dct[num]
         else:
             # Вопросы кончились. Сделаем соответствующую запись в профиле пользователя
             questions_count = len(question_dct)
-            resume_dct = {
+            question_dct = dict()
+            question_dct = {
                 "questions_count": questions_count,
                 "theme": theme,
                 "tests": tests,
                 "datetime": str(datetime.datetime.now()),
             }
-            question_dct = dict()
+
             is_full = True
     question_dct.update(
         {
@@ -161,28 +162,33 @@ def callback_start(call):
         if is_full:
             user_str_id = str(call.message.chat.id)
             user_resume_dct = utils.read_data("data", "user_resume_dct.json")
-            questions_lst = [z for z in range(int(resume_dct["questions_count"]) - 1)]
+            user_resume_dct.setdefault(user_str_id, list())
+            user_resume_dct[user_str_id].append(resume_dct)
+            utils.write_data("data", "user_resume_dct.json", user_resume_dct)
+            user_resume_dct = utils.read_data("data", "user_resume_dct.json")
+            questions_lst = [z for z in range(int(question_dct["questions_count"]))]
             score = 0
+            removed_value = question_dct.pop('num')
             for ur in user_resume_dct[user_str_id][::-1]:
-                if ur["theme"] != resume_dct["theme"]:
+                if ur["theme"] != question_dct["theme"]:
                     continue
-                if ur["tests"] != resume_dct["tests"]:
+                if ur["tests"] != question_dct["tests"]:
                     continue
                 if questions_lst:
-                    question = questions_lst.pop(questions_lst.index(ur["num"]))
+                    questions_lst.pop(questions_lst.index(ur["num"]))
                     score += ur["weight"]
 
-            resume_dct.update({"score": score})
+            question_dct.update({"score": score})
 
             username = get_full_name(call.message.chat)
             user_score_dct = utils.read_data("data", "user_score_dct.json")
             user_score_dct.setdefault(user_str_id, dict())
             user_score_dct.setdefault(user_str_id, dict()).setdefault("resume", list())
-            user_score_dct[user_str_id]["resume"].append(resume_dct)
+            user_score_dct[user_str_id]["resume"].append(question_dct)
             user_score_dct[user_str_id]["username"] = username
             user_score_dct[user_str_id]["last_resume"] = str(datetime.datetime.now())
             utils.write_data("data", "user_score_dct.json", user_score_dct)
-            send_rating(call.message.chat.id)
+            '''send_rating(call.message.chat.id)'''
 
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
             return
