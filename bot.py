@@ -114,6 +114,31 @@ def send_rating(user_id):
     utils.write_data("data", "tmp.json", rate)
 
 
+def send_result(user_id):
+    user_score_lst = utils.read_data("data", "user_score_dct.json")
+    user_score_lst = user_score_lst[user_id]
+    user_score_lst = user_score_lst["resume"]
+    last_dict = user_score_lst[-1]
+    theme = last_dict['theme']
+    count_questions = last_dict["questions_count"]
+    tests_lst = utils.read_data("data", "world_war_one.json")[theme]
+    tests_lst = list(tests_lst.keys())
+    result_dict = dict()
+    user_score_lst.reverse()
+    for test in tests_lst:
+        result_dict[test] = 0
+    n = 0
+    max_count = len(user_score_lst)
+    while tests_lst:
+        if n == max_count:
+            break
+        elif user_score_lst[n]["theme"] == theme and user_score_lst[n]["tests"] in tests_lst:
+            result_dict[user_score_lst[n]["tests"]] = user_score_lst[n]["score"]
+            tests_lst.remove(user_score_lst[n]["tests"])
+        n += 1
+    return result_dict, theme, count_questions
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_start(call):
     if call.from_user.is_bot:
@@ -190,7 +215,24 @@ def callback_start(call):
             utils.write_data("data", "user_score_dct.json", user_score_dct)
             '''send_rating(call.message.chat.id)'''
 
-            bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.id)
+            kb = telebot.types.InlineKeyboardMarkup()
+            kb.add(
+                telebot.types.InlineKeyboardButton(
+                    text='Результат', callback_data='result'
+                )
+            )
+            kb.add(
+                telebot.types.InlineKeyboardButton(
+                    text='Меню', callback_data='menu'
+                )
+            )
+            bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.id,
+                text="Чтобы перейти к результатам нажмите: 'Результат'\n"
+                     "Чтобы вернутся на главное меню нажмите: 'Меню'",
+                reply_markup=kb,
+            )
             return
 
         elif resume_dct:
@@ -221,6 +263,33 @@ def callback_start(call):
             text=question,
             reply_markup=kb,
         )
+    elif call.data == 'result':
+        result_dict, theme, count_questions = send_result(str(call.message.chat.id))
+        tests_count = len(result_dict.keys())
+        sum_score = 0
+        text_of_result = ''
+        for key in result_dict.keys():
+            sum_score += result_dict[key]
+            text_of_result += key + ' - ' + str(result_dict[key] / count_questions * 100) + '%\n'
+
+        kb = telebot.types.InlineKeyboardMarkup()
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text='Ошибки', callback_data='result'
+            )
+        )
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text='Меню', callback_data='menu'
+            )
+        )
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text='Тема освоена на ' + str(sum_score / (tests_count * count_questions) * 100) + '%\n' + text_of_result,
+            reply_markup=kb,
+        )
+
 
 
 @bot.message_handler(content_types=["text"])
