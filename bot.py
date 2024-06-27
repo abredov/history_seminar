@@ -139,6 +139,30 @@ def send_result(user_id):
     return result_dict, theme, count_questions
 
 
+def send_mistakes(user_id):
+    user_resume_lst = utils.read_data("data", "user_resume_dct.json")
+    user_resume_lst = user_resume_lst[user_id]
+    user_resume_lst.reverse()
+    last_quest = user_resume_lst[0]
+    theme = last_quest["theme"]
+    test = last_quest["tests"]
+    count_questions = last_quest["num"] + 1
+    mistakes_dict = dict()
+    testing = utils.read_data("data", "world_war_one.json")
+    testing = testing[theme]
+    testing = testing[test]
+    for i in range(count_questions):
+        if user_resume_lst[i]["weight"] == 0:
+            question = testing[i]["question"]
+            answers = testing[i]['answers']
+            answer = ''
+            for j in range(len(answers)):
+                if answers[j]["weight"] == 1:
+                    answer = answers[j]["text"]
+            mistakes_dict[question] = answer
+    return mistakes_dict
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_start(call):
     if call.from_user.is_bot:
@@ -275,7 +299,7 @@ def callback_start(call):
         kb = telebot.types.InlineKeyboardMarkup()
         kb.add(
             telebot.types.InlineKeyboardButton(
-                text='Ошибки', callback_data='result'
+                text='Ошибки', callback_data='mistakes'
             )
         )
         kb.add(
@@ -286,10 +310,32 @@ def callback_start(call):
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.id,
-            text='Тема освоена на ' + str(sum_score / (tests_count * count_questions) * 100) + '%\n' + text_of_result,
+            text='Тема освоена на ' + str(round(sum_score / (tests_count * count_questions) * 100)) + '%\n' + text_of_result,
             reply_markup=kb,
         )
-
+    elif call.data == 'mistakes':
+        mistakes_dict = send_mistakes(str(call.message.chat.id))
+        text_of_mistakes = ''
+        if len(mistakes_dict.keys()) == 0:
+            text_of_mistakes = 'Поздравляем, вы не допустили ни одну ошибку!!!'
+        else:
+            n = 1
+            for key in mistakes_dict.keys():
+                text_of_mistakes += str(n) + '. ' + key + '\n' + mistakes_dict[key] + '\n'
+                n += 1
+        kb = telebot.types.InlineKeyboardMarkup()
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text='Меню', callback_data='menu'
+            )
+        )
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text='Вам приведены вопросы, в которых вы совершили ошибку, с правильными ответами, \n' +
+                 'постарайтесь их запомнить\n' + text_of_mistakes,
+            reply_markup=kb,
+        )
 
 
 @bot.message_handler(content_types=["text"])
