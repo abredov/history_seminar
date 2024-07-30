@@ -336,6 +336,25 @@ def callback_start(call):
                  'постарайтесь их запомнить\n' + text_of_mistakes,
             reply_markup=kb,
         )
+    elif call.data == 'menu':
+        kb = telebot.types.InlineKeyboardMarkup()
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text="Выбор темы", callback_data="theme"
+            )
+        )
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text="Посмотреть рейтинг", callback_data="rating"
+            )
+        )
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text='Меню',
+            reply_markup=kb,
+        )
+
 
 
 @bot.message_handler(content_types=["text"])
