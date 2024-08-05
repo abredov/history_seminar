@@ -79,40 +79,82 @@ def get_full_name(user):
     return full_name
 
 
+def create_rating_msg(collection_dct, resume_lst):
+    user_dct = dict()
+    for theme in collection_dct:
+        for tests in collection_dct[theme]:
+            key = f'{theme}_{tests}'
+            user_dct.setdefault(key, list())
+
+    for resume in resume_lst:
+        key = f'{resume["theme"]}_{resume["tests"]}'
+        user_dct.setdefault(key, list())
+        user_dct[key].append(resume)
+
+    message2_lst = list()
+    for tt in user_dct:
+        theme, tests = tt.split('_')
+        msg = f'По теме <b>{theme} {tests}</b> сделано попыток: {len(user_dct[tt])}'
+        if len(user_dct[tt]) == 1:
+            maxx = max(user_dct[tt], key=lambda x: x['score'] / x['questions_count'])
+            msg += f'\nМаксимум баллов: {maxx["score"]} из {maxx["questions_count"]}' 
+        elif user_dct[tt]:
+            maxx = max(user_dct[tt], key=lambda x: x['score'] / x['questions_count'])
+            msg += f'\nМаксимум баллов: {maxx["score"]} из {maxx["questions_count"]}' 
+            minn = min(user_dct[tt], key=lambda x: x['score'] / x['questions_count'])
+            msg += f'\nМинимум баллов: {minn["score"]} из {minn["questions_count"]}' 
+        msg += f'\n'
+        message2_lst.append(msg)
+    message2 = '\n'.join(message2_lst)
+
+    rating_lst = list()
+    for tt in user_dct:
+        current = 0
+        if user_dct[tt]:
+            maxx = max(user_dct[tt], key=lambda x: x['score'] / x['questions_count'])
+            current = maxx['score'] / maxx['questions_count']
+        rating_lst.append(current)
+    rating = sum(rating_lst) / len(rating_lst)
+    message3 = f'Суммарный рейтинг: {rating:0.2f}'
+    return message2, message3, rating
+
+
 def send_rating(user_id):
+    """
+    Функция генерирует рейтинг по собранным данным
+    1. Последний пройденный тест, сколько набрано очков
+    2. Все имеющиеся тесты, сколько по каждому максимум и минимум или вообще нет
+    3. Суммарный рейтинг пользователя по всем пройденным тестам с наилучшим результатом
+    4. Положение в рейтинге пользователя относительно других
+    """
+
     print('rating')
-    '''
-                "questions_count": 20,
-                "theme": "Первая мировая война",
-                "tests": "Тест 1",
-                "datetime": "2024-04-07 23:16:19.932513",
-                "score": 17
-            '''
-    rating_list = [
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score')
-    ]
-    sorted(rating_list, key=lambda x: x[6] / x[2])
-    for r in rating_list:
-        if r[3] != "Тест 1":
-            continue
     rating_dct = utils.read_data("data", "user_score_dct.json")
-    rate = rating_dct.get(str(user_id), dict())
-    rating_dct = {
-        "userscore": rate.get("userscore"),
-        "username": rate.get("username"),
-        "tests_count": len(rate.get("tests", list())),
-    }
+    resume_lst = rating_dct.get(str(user_id), dict()).get('resume', list())
+    rating1 = max(resume_lst, key=lambda x: x['datetime'])
+    message1 = '\n'.join([
+        f'Последний тест по теме <b>{rating1["theme"]}: {rating1["tests"]}</b>',
+        f'Дата прохождения: {rating1["datetime"][:19]}',
+        f'Набрано {rating1["score"]} из {rating1["questions_count"]} баллов',
+    ])
+    bot.send_message(user_id, message1, parse_mode="html")
 
-    message = ""
-    message += f'<b>Ваше имя: </b>{rating_dct["username"]}\n'
-    message += f'<b>Набрано баллов: </b>{rating_dct["userscore"]}\n'
-    message += f'<b>Пройдено тестов: </b>{rating_dct["tests_count"]}\n'
-    message += f"{rate}"
-    bot.send_message(user_id, message, parse_mode="html")
-    utils.write_data("data", "tmp.json", rate)
+    collection_dct = utils.read_data("tests", "collection.json")
+    message2, message3, _ = create_rating_msg(collection_dct, resume_lst)
+    bot.send_message(user_id, message2, parse_mode="html")
+    bot.send_message(user_id, message3, parse_mode="html")
 
+    total_lst = list()
+    for user_id_rating in rating_dct:
+        resume_lst = rating_dct.get(user_id_rating, dict()).get('resume', list())
+        _, _, rating = create_rating_msg(collection_dct, resume_lst)
+        total_lst.append((user_id_rating, rating))
+    total_lst.sort(key=lambda x: x[1], reverse=True)
+    total = [x[0] for x in total_lst]
+    message4 = f'Ваше место в общем рейтинге: {total.index(str(user_id)) + 1} из {len(total)}'
+    bot.send_message(user_id, message4, parse_mode="html")
+
+    
 
 def send_result(user_id):
     user_score_lst = utils.read_data("data", "user_score_dct.json")
@@ -380,3 +422,4 @@ def start(message):
 
 if __name__ == "__main__":
     bot.polling(none_stop=True, interval=0)
+    
