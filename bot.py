@@ -80,38 +80,46 @@ def get_full_name(user):
 
 
 def send_rating(user_id):
-    print('rating')
-    '''
-                "questions_count": 20,
-                "theme": "Первая мировая война",
-                "tests": "Тест 1",
-                "datetime": "2024-04-07 23:16:19.932513",
-                "score": 17
-            '''
-    rating_list = [
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score'),
-        ('id', 'fio', 'questions_count', 'theme', 'tests', 'datetime', 'score')
-    ]
-    sorted(rating_list, key=lambda x: x[6] / x[2])
-    for r in rating_list:
-        if r[3] != "Тест 1":
-            continue
-    rating_dct = utils.read_data("data", "user_score_dct.json")
-    rate = rating_dct.get(str(user_id), dict())
-    rating_dct = {
-        "userscore": rate.get("userscore"),
-        "username": rate.get("username"),
-        "tests_count": len(rate.get("tests", list())),
-    }
-
-    message = ""
-    message += f'<b>Ваше имя: </b>{rating_dct["username"]}\n'
-    message += f'<b>Набрано баллов: </b>{rating_dct["userscore"]}\n'
-    message += f'<b>Пройдено тестов: </b>{rating_dct["tests_count"]}\n'
-    message += f"{rate}"
-    bot.send_message(user_id, message, parse_mode="html")
-    utils.write_data("data", "tmp.json", rate)
+    user_id = str(user_id)
+    user_score = utils.read_data("data", "user_score_dct.json")
+    raiting_lst = []
+    for user in list(user_score.keys()):
+        result_lst = user_score[user]["resume"]
+        result_lst = result_lst[::-1]
+        repeat_values_lst = []
+        score = 0
+        for result_dict in result_lst:
+            if (result_dict["theme"], result_dict["tests"]) not in repeat_values_lst:
+                repeat_values_lst.append((result_dict["theme"], result_dict["tests"]))
+                score += result_dict["score"]
+        raiting_lst.append((user, user_score[user]["username"], len(repeat_values_lst), score))
+    raiting_lst = sorted(raiting_lst, key=lambda x: x[3])
+    raiting_lst = raiting_lst[::-1]
+    status = 0
+    place = len(raiting_lst) + 1
+    user_name = ''
+    tests_count = 0
+    score = 0
+    for i in range(len(raiting_lst)):
+        if raiting_lst[i][0] == user_id:
+            status = 1
+            place = i + 1
+            user_name = raiting_lst[i][1]
+            tests_count = raiting_lst[i][2]
+            score = raiting_lst[i][3]
+            break
+    if status == 0:
+        message = ""
+        message += f'Набрано баллов: {score}\n'
+        message += f'Пройдено тестов: {tests_count}\n'
+        message += f'Вы занимаете {place} место из {place}\n'
+    else:
+        message = ""
+        message += f'Ваше имя: {user_name}\n'
+        message += f'Набрано баллов: {score}\n'
+        message += f'Пройдено тестов: {tests_count}\n'
+        message += f'Вы занимаете {place} место из {len(raiting_lst)}\n'
+    return message
 
 
 def send_result(user_id):
@@ -170,13 +178,30 @@ def callback_start(call):
 
     theme_lst = get_theme_name()
     if call.data == "rating":
-        send_rating(call.message.chat.id)
+        message = send_rating(call.message.chat.id)
+        kb = telebot.types.InlineKeyboardMarkup()
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text='Меню', callback_data='menu'
+            )
+        )
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            text=message,
+            reply_markup=kb,
+        )
     elif call.data == "theme":
         kb = telebot.types.InlineKeyboardMarkup()
         for button in theme_lst:
             kb.add(
                 telebot.types.InlineKeyboardButton(text=button, callback_data=button)
             )
+        kb.add(
+            telebot.types.InlineKeyboardButton(
+                text='Меню', callback_data='menu'
+            )
+        )
         bot.edit_message_text(
             chat_id=call.message.chat.id,
             message_id=call.message.id,
@@ -198,6 +223,11 @@ def callback_start(call):
                         text=tests, callback_data=callback_data
                     )
                 )
+            kb.add(
+                telebot.types.InlineKeyboardButton(
+                    text='Меню', callback_data='menu'
+                )
+            )
             bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.id,
@@ -374,8 +404,7 @@ def start(message):
             "Привет! Я бот для проверки знаний по Истории. Что выберешь?",
             reply_markup=kb,
         )
-    elif message.text == "/rating":
-        send_rating(message.from_user.id)
+
 
 
 if __name__ == "__main__":
