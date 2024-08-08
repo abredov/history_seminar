@@ -1,2 +1,2 @@
-token = "7349052362:AAF7_PMytF_okz3wVjIKKNKpxYQ8TLlAHwg"
+token = "6446260947:AAHt7zCxA22IZMHrWUD4udw5vtJhp72xTW4"
 name = "@quizzyfunbot"

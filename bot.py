@@ -79,6 +79,7 @@ def get_full_name(user):
     return full_name
 
 
+'''
 def create_rating_msg(collection_dct, resume_lst):
     user_dct = dict()
     for theme in collection_dct:
@@ -153,9 +154,10 @@ def send_rating(user_id):
     total = [x[0] for x in total_lst]
     message4 = f'Ваше место в общем рейтинге: {total.index(str(user_id)) + 1} из {len(total)}'
     bot.send_message(user_id, message4, parse_mode="html")
+'''
 
 
-def send_rating1(user_id):
+def send_rating(user_id):
     user_id = str(user_id)
     user_score = utils.read_data("data", "user_score_dct.json")
     raiting_lst = []
@@ -478,6 +480,18 @@ def start(message):
         bot.send_message(
             message.from_user.id,
             "Привет! Я бот для проверки знаний по Истории. Что выберешь?",
+            reply_markup=kb,
+        )
+    elif message.text == "/rating":
+        msg = send_rating(message.from_user.id)
+        kb = telebot.types.InlineKeyboardMarkup()
+        kb_menu = telebot.types.InlineKeyboardButton(
+            text="Меню", callback_data="menu"
+        )
+        kb.add(kb_menu)
+        bot.send_message(
+            message.from_user.id,
+            text=msg,
             reply_markup=kb,
         )
 
