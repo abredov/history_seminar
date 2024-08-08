@@ -79,7 +79,7 @@ def get_full_name(user):
     return full_name
 
 
-def send_rating(user_id):
+def send_rating1(user_id):
     user_id = str(user_id)
     user_score = utils.read_data("data", "user_score_dct.json")
     raiting_lst = []
