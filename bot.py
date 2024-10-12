@@ -8,7 +8,7 @@ bot = telebot.TeleBot(settings.token)
 
 
 def get_theme_name():
-    ww1_dct = utils.read_data("data", "world_war_one.json")
+    ww1_dct = utils.read_data("tests", "collection.json")
     button_lst = list()
     for key in ww1_dct.keys():
         button_lst.append(key)
@@ -16,7 +16,7 @@ def get_theme_name():
 
 
 def get_tests_name(theme):
-    ww1_dct = utils.read_data("data", "world_war_one.json")[theme]
+    ww1_dct = utils.read_data("tests", "collection.json")[theme]
     button_lst = list()
     for key in ww1_dct.keys():
         button_lst.append(key)
@@ -34,7 +34,7 @@ def get_question(*args):
 
     resume_dct = dict()
     is_full = False
-    question_dct = utils.read_data("data", "world_war_one.json")
+    question_dct = utils.read_data("tests", "collection.json")
     if len(args) == 3:
         question_dct = question_dct[theme][tests][num]
     elif len(args) == 5:
@@ -207,7 +207,7 @@ def send_result(user_id):
     last_dict = user_score_lst[-1]
     theme = last_dict['theme']
     count_questions = last_dict["questions_count"]
-    tests_lst = utils.read_data("data", "world_war_one.json")[theme]
+    tests_lst = utils.read_data("tests", "collection.json")[theme]
     tests_lst = list(tests_lst.keys())
     result_dict = dict()
     user_score_lst.reverse()
@@ -234,7 +234,7 @@ def send_mistakes(user_id):
     test = last_quest["tests"]
     count_questions = last_quest["num"] + 1
     mistakes_dict = dict()
-    testing = utils.read_data("data", "world_war_one.json")
+    testing = utils.read_data("tests", "collection.json")
     testing = testing[theme]
     testing = testing[test]
     for i in range(count_questions):
