@@ -42,6 +42,7 @@ def read_xlsx(folder_name, file_name):
         res_dct.setdefault(worksheet.title, list())
         for row in worksheet.iter_rows():
             res = [c.value for c in row if c.value != None]
+
             if not res:
                 continue
 
@@ -57,12 +58,13 @@ def read_xlsx(folder_name, file_name):
             elif res[0] == "Answer":
                 key = "answers"
                 continue
-
+            
             local_dct.setdefault(key, list())
             if key == "answers":
                 local_dct[key].append({"text": res[0], "weight": res[1]})
             else:
                 local_dct[key].extend(res)
+        res_dct[worksheet.title].append(local_dct)
     return res_dct
 
 

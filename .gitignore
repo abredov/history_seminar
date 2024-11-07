@@ -5,3 +5,5 @@ venv/
 .venv/
 tmp.json
 *.xlsx
+output/
+input/
