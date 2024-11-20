@@ -12,7 +12,7 @@ def json_to_xlsx(data, filename):
         sheet_lst = list()
         for question in value:
             sheet_lst.append(["Question"])
-            for q in question["question"].split("\n"):
+            for q in question["question"]:
                 sheet_lst.append([q])
             sheet_lst.append(["Answer", "Value"])
             for answer in question["answers"]:
@@ -48,7 +48,7 @@ def read_xlsx(folder_name, file_name):
 
             if res[0] == "Question":
                 if local_dct:
-                    local_dct["question"] = "\n".join(local_dct["question"])
+                    local_dct["question"] = local_dct["question"]
                     res_dct[worksheet.title].append(local_dct)
                     local_dct = dict()
                 i += 1
