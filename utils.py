@@ -30,6 +30,20 @@ def json_to_xlsx(data, filename):
         wb.save(filename)
 
 
+def convert_quest(quest):
+    """
+    Преобразование вопроса из списка в строку
+    """
+    res = dict()
+    for key, value_lst in quest.items():
+        for value in value_lst:
+            if "question" in value:
+                question_lst = value["question"]
+                value["question"] = "\n".join(question_lst)
+        res[key] = value_lst
+    return res
+
+
 def read_xlsx(folder_name, file_name):
     filename = os.path.join(folder_name, file_name)
     workbook = openpyxl.load_workbook(filename)
@@ -58,7 +72,7 @@ def read_xlsx(folder_name, file_name):
             elif res[0] == "Answer":
                 key = "answers"
                 continue
-            
+
             local_dct.setdefault(key, list())
             if key == "answers":
                 local_dct[key].append({"text": res[0], "weight": res[1]})
@@ -93,7 +107,7 @@ def convert_dir(folder_name, json_filename):
     Обновление библиотеки тестов
     """
     collect = read_data(folder_name, json_filename)
-    
+
     output_folder_name = os.path.join(folder_name, "output")
     if not os.path.exists(output_folder_name):
         os.mkdir(output_folder_name)
@@ -102,10 +116,10 @@ def convert_dir(folder_name, json_filename):
         if os.path.exists(quest_name):
             os.remove(quest_name)
         json_to_xlsx(collect[quest], quest_name)
-   
-    input_folder_name = os.path.join(folder_name, "input")  
+
+    input_folder_name = os.path.join(folder_name, "input")
     if not os.path.exists(input_folder_name):
-        os.mkdir(input_folder_name)      
+        os.mkdir(input_folder_name)
     for root, _, files in os.walk(input_folder_name):
         for file_name in files:
             *fn, fe = file_name.split(".")
@@ -113,6 +127,7 @@ def convert_dir(folder_name, json_filename):
                 continue
             key = ".".join(fn)
             quest = read_xlsx(input_folder_name, file_name)
+            quest = convert_quest(quest)
             if sum([len(quest[q]) for q in quest]):
                 collect.update({key: quest})
             else:
