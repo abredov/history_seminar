@@ -238,9 +238,10 @@ def send_mistakes(user_id):
     testing = testing[theme]
     testing = testing[test]
     for i in range(count_questions):
+        num = user_resume_lst[i]['num']
         if user_resume_lst[i]["weight"] == 0:
-            question = testing[i]["question"]
-            answers = testing[i]['answers']
+            question = testing[num]["question"]
+            answers = testing[num]['answers']
             answer = ''
             for j in range(len(answers)):
                 if answers[j]["weight"] == 1:
